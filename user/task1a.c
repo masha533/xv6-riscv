@@ -19,6 +19,10 @@ main(void)
 
   int status = 0;
   int w = wait(&status);
+  if(w < 0){
+    fprintf(2, "wait failed\n");
+    exit(1);
+  }
   printf("child %d is done with %d status code\n", w, status);
 
   exit(0);
