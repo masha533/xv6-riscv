@@ -1,3 +1,4 @@
+#include "kernel/procinfo.h"
 #define SBRK_ERROR ((char *)-1)
 
 struct stat;
@@ -23,6 +24,7 @@ int dup(int);
 int getpid(void);
 char* sys_sbrk(int,int);
 int pause(int);
+int ps_listinfo(struct procinfo *plist, int lim);
 int uptime(void);
 
 // ulib.c
