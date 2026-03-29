@@ -21,6 +21,11 @@ void            bunpin(struct buf*);
 void            consoleinit(void);
 void            consoleintr(int);
 void            consputc(int);
+int             consoleread(short, int, uint64, int);
+int             consolewrite(short, int, uint64, int);
+void            pseudoinit(void);
+int             pseudoread(short minor, int user_dst, uint64 dst, int n);
+int             pseudowrite(short minor, int user_src, uint64 src, int n);
 
 // exec.c
 int             kexec(char*, char**);

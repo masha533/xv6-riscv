@@ -10,12 +10,28 @@
 #include "kernel/fcntl.h"
 
 char *argv[] = { "sh", 0 };
+static void
+create_if_needed(char *path, short major, short minor)
+{
+  int fd;
 
+  fd = open(path, O_RDONLY);
+  if(fd >= 0){
+    close(fd);
+    return;
+  }
+
+  mknod(path, major, minor);
+}
 int
 main(void)
 {
   int pid, wpid;
-
+  create_if_needed("console", CONSOLE, 0);
+  create_if_needed("null", PSEUDO, M_NULL);
+  create_if_needed("zero", PSEUDO, M_ZERO);
+  create_if_needed("urandom", PSEUDO, M_URANDOM);
+  create_if_needed("nullstat", PSEUDO, M_NULLSTAT);
   if(open("console", O_RDWR) < 0){
     mknod("console", CONSOLE, 0);
     open("console", O_RDWR);
