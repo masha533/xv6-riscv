@@ -42,3 +42,6 @@ entry("getpid");
 entry("sbrk");
 entry("pause");
 entry("uptime");
+entry("pgtprint");
+entry("pgclearflags");
+entry("pgcheckflags");

@@ -484,3 +484,142 @@ ismapped(pagetable_t pagetable, uint64 va)
   }
   return 0;
 }
+
+static void
+print_index3(int x)
+{
+  static char dig[] = "0123456789abcdef";
+  printf("0x%c%c%c", dig[(x >> 8) & 0xf], dig[(x >> 4) & 0xf], dig[x & 0xf]);
+}
+
+static void
+print_indent(int depth)
+{
+  for(int i = 0; i < depth; i++)
+    printf(".........");
+  if(depth > 0)
+    printf(" ");
+}
+
+static void
+print_flags(pte_t pte)
+{
+  printf("%c", (pte & PTE_R) ? 'R' : '_');
+  printf("%c", (pte & PTE_W) ? 'W' : '_');
+  printf("%c", (pte & PTE_X) ? 'X' : '_');
+  printf("%c", (pte & PTE_U) ? 'U' : '_');
+  printf("%c", (pte & PTE_G) ? 'G' : '_');
+  printf("%c", (pte & PTE_A) ? 'A' : '_');
+  printf("%c", (pte & PTE_D) ? 'D' : '_');
+}
+
+static void
+vmprint_rec(pagetable_t pagetable, int depth)
+{
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+
+    if((pte & PTE_V) == 0)
+      continue;
+
+    print_indent(depth);
+    print_index3(i);
+    printf(" -> %p ", (void *)PTE2PA(pte));
+    print_flags(pte);
+    printf("\n");
+
+    if((pte & (PTE_R | PTE_W | PTE_X)) == 0){
+      pagetable_t child = (pagetable_t)PTE2PA(pte);
+      vmprint_rec(child, depth + 1);
+    }
+  }
+}
+
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("PAGETABLE %p\n", (void *)pagetable);
+  vmprint_rec(pagetable, 0);
+}
+
+static int
+user_range_ok(struct proc *p, uint64 addr, int len)
+{
+  uint64 end;
+
+  if(len <= 0)
+    return 0;
+  if(addr >= p->sz)
+    return 0;
+
+  end = addr + (uint64)len;
+  if(end < addr)
+    return 0;
+  if(end > p->sz)
+    return 0;
+
+  return 1;
+}
+
+int
+pgclearflags(pagetable_t pagetable, uint64 addr, uint64 len, int flags)
+{
+  struct proc *p = myproc();
+  uint64 a, last;
+  pte_t *pte;
+
+  if(flags == 0)
+    return -1;
+  if(flags & ~(PTE_A | PTE_D))
+    return -1;
+  if(!user_range_ok(p, addr, (int)len))
+    return -1;
+
+  a = PGROUNDDOWN(addr);
+  last = PGROUNDDOWN(addr + len - 1);
+
+  for(;;){
+    pte = walk(pagetable, a, 0);
+
+    if(pte != 0 && (*pte & PTE_V) && (*pte & PTE_U))
+      *pte &= ~flags;
+
+    if(a == last)
+      break;
+    a += PGSIZE;
+  }
+
+  sfence_vma();
+  return 0;
+}
+
+int
+pgcheckflags(pagetable_t pagetable, uint64 addr, uint64 len, int flags)
+{
+  struct proc *p = myproc();
+  uint64 a, last;
+  pte_t *pte;
+
+  if(flags == 0)
+    return -1;
+  if(flags & ~(PTE_A | PTE_D))
+    return -1;
+  if(!user_range_ok(p, addr, (int)len))
+    return -1;
+
+  a = PGROUNDDOWN(addr);
+  last = PGROUNDDOWN(addr + len - 1);
+
+  for(;;){
+    pte = walk(pagetable, a, 0);
+
+    if(pte != 0 && (*pte & PTE_V) && (*pte & PTE_U) && ((*pte & flags) != 0))
+      return 1;
+
+    if(a == last)
+      break;
+    a += PGSIZE;
+  }
+
+  return 0;
+}
