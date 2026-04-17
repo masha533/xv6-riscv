@@ -35,22 +35,42 @@ print9(uint32 x)
     d /= 10;
   }
 }
+static void
+divmod(long long a, long long b, long long *q, long long *r)
+{
+  *q = a / b;
+  *r = a % b;
+  if (*r < 0) {
+    *r += b;
+    (*q)--;
+  }
+}
 
 int
 main(int argc, char **argv)
 {
   static int mdays[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-  uint64 ns = rtcdate();
-  uint64 sec = ns / 1000000000ull;
-  uint32 nsec = (uint32)(ns % 1000000000ull);
+  long long ns = (long long)rtcdate();
+  long long sec, nsec64;
+  divmod(ns, 1000000000ll, &sec, &nsec64);
+
+  long long days, sec_in_day;
+  divmod(sec, 86400ll, &days, &sec_in_day);
 
   int year = 1970;
+  while (days >= 146097) {
+    days -= 146097;
+    year += 400;
+  }
+  while (days < 0) {
+    days += 146097;
+    year -= 400;
+  }
   while (1) {
-    int days = is_leap(year) ? 366 : 365;
-    uint64 year_sec = (uint64)days * 86400ull;
-    if (sec >= year_sec) {
-      sec -= year_sec;
+    int ydays = is_leap(year) ? 366 : 365;
+    if (days >= ydays) {
+      days -= ydays;
       year++;
     } 
     else {
@@ -60,13 +80,12 @@ main(int argc, char **argv)
 
   int month = 0;
   while (month < 12) {
-    int days = mdays[month];
+    int mday = mdays[month];
     if (month == 1 && is_leap(year))
-      days = 29;
+      mday = 29;
 
-    uint64 month_sec = (uint64)days * 86400ull;
-    if (sec >= month_sec){
-      sec -= month_sec;
+    if (days >= mday) {
+      days -= mday;
       month++;
     } 
     else {
@@ -74,14 +93,15 @@ main(int argc, char **argv)
     }
   }
 
-  int day = (int)(sec / 86400ull) + 1;
-  sec %= 86400ull;
+  int day = (int)days + 1;
 
-  int hour = (int)(sec / 3600ull);
-  sec %= 3600ull;
+  int hour = (int)(sec_in_day / 3600);
+  sec_in_day %= 3600;
 
-  int minute = (int)(sec / 60ull);
-  int second = (int)(sec % 60ull);
+  int minute = (int)(sec_in_day / 60);
+  int second = (int)(sec_in_day % 60);
+
+  uint32 nsec = (uint32)nsec64;
 
   print4(year);
   printf("-");
