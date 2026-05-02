@@ -6,7 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
-
+#include "dmesg.h"
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
 // map ELF permissions to PTE permission bits.
@@ -126,7 +126,9 @@ kexec(char *path, char **argv)
     if(*s == '/')
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
-    
+  if(dmsg_should_log(DMSG_LOG_EXEC)){
+    pr_msg("exec: pid=%d path=%s name=%s", p->pid, path, p->name);
+  }
   // Commit to the user image.
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;

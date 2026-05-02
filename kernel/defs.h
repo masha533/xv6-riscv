@@ -183,3 +183,10 @@ void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+// dmesg.c
+void dmsginit(void);
+void pr_msg(const char *, ...);
+int dmsg_copyout(uint64, int);
+int dmsg_should_log(int);
+int dmsg_logctl(int, int);

@@ -1,0 +1,11 @@
+#ifndef XV6_DMESG_H
+#define XV6_DMESG_H
+
+#define DMSG_LOG_SYSCALL 0x1
+#define DMSG_LOG_INTR 0x2
+#define DMSG_LOG_PROC 0x4
+#define DMSG_LOG_EXEC 0x8
+
+#define DMSG_LOG_ALL (DMSG_LOG_SYSCALL | DMSG_LOG_INTR | DMSG_LOG_PROC | DMSG_LOG_EXEC)
+
+#endif
